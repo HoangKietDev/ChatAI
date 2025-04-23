@@ -5,7 +5,7 @@
 }
 
 .history-sidebar {
-  width: 300px;
+  width: 20%;
   background-color: #f4f4f4;
   padding: 20px;
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
@@ -24,7 +24,22 @@
   margin-bottom: 10px;
   cursor: pointer;
   color: #007bff;
-  text-overflow: ellipsis
+  white-space: nowrap;         /* Đảm bảo nội dung chỉ hiển thị trên một dòng */
+  overflow: hidden;            /* Ẩn nội dung vượt quá giới hạn */
+  display: block;              /* Hiển thị li dưới dạng block */
+  font-size: 14px;             /* Kích thước chữ có thể tùy chỉnh */
+   /* Thêm hiệu ứng mờ dần */
+   position: relative;
+}
+
+.history-sidebar li::after {
+  content: '';                  /* Thêm một phần tử giả vào cuối li */
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 30px;                  /* Kích thước vùng mờ dần */
+  height: 100%;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, #f4f4f4 100%);
 }
 
 .history-sidebar li:hover {
@@ -37,6 +52,7 @@
   flex-direction: column;
   background-color: #fff;
   border-left: 1px solid #ddd;
+  width: 100%;
 }
 
 .chat-header {
@@ -105,4 +121,54 @@
 
 .chat-input button:hover {
   background-color: #0056b3;
+}
+
+.chat-message.highlighted {
+  background-color: #ffeaa7;
+  border: 1px solid #fdcb6e;
+  transition: background-color 0.5s ease;
+}
+
+.history-sidebar {
+  width: 250px;
+  transition: width 0.3s ease, padding 0.3s ease;
+  overflow: hidden;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border-right: 1px solid #ccc;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.history-sidebar.collapsed {
+  width: 50px;
+  padding: 10px 5px;
+  align-items: center;
+}
+
+.toggle-history-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.history-sidebar.collapsed .toggle-history-btn {
+  right: 5px;
+}
+
+.history-sidebar h4,
+.history-sidebar ul {
+  transition: opacity 0.3s ease;
+}
+
+.history-sidebar.collapsed h4,
+.history-sidebar.collapsed ul {
+  opacity: 0;
+  pointer-events: none;
 }
