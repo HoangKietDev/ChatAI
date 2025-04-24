@@ -11,30 +11,65 @@ const ChatApp = () => {
   const [showHistory, setShowHistory] = useState(true);
   const [isTypingComplete, setIsTypingComplete] = useState(true); // Cờ hoàn tất typing
   const [isSending, setIsSending] = useState(false); // Cờ để kiểm tra quá trình gửi câu hỏi
-
+  const [isAtBottom, setIsAtBottom] = useState(true);
 
   const containerRef = useRef(null); // ref đến .chat-messages
   const messageRefs = useRef([]);    // mảng ref đến từng tin nhắn
-  const CHAT_API_KEY = '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';
+  const CHAT_API_KEY = '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';
   const typingIntervalRef = useRef(null); // Giữ ref để dừng typing
   const controllerRef = useRef(null); // Ref để hủy API call
 
-
   useEffect(() => {
-    if (containerRef.current) {
-      // Lấy tin nhắn cuối từ người dùng và cuộn tới nó
+    const lastMessage = messages[messages.length - 1];
+    if (containerRef.current && lastMessage?.role === 'user') {
       const totalMessages = messageRefs.current.length;
-      const lastMessage = messageRefs.current[totalMessages - 1];
+      const lastMessageRef = messageRefs.current[totalMessages - 1];
 
-      if (lastMessage) {
-        lastMessage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (lastMessageRef) {
+        lastMessageRef.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }
-  }, [messages]); // Chạy khi messages thay đổi
+  }, [messages]);
+
+  const handleScroll = () => {
+    const container = containerRef.current;
+    if (!container) return;
+  
+    const threshold = 50; // khoảng cách cho phép lệch khỏi đáy
+    const isBottom = container.scrollHeight - container.scrollTop - container.clientHeight <= threshold;
+    setIsAtBottom(isBottom);
+  };
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) {
+      console.log('❌ containerRef is null');
+      return;
+    }
+  
+    const handleScroll = () => {
+      console.log('✅ scroll event triggered');
+      const threshold = 50;
+      const isBottom = container.scrollHeight - container.scrollTop - container.clientHeight <= threshold;
+      setIsAtBottom(isBottom);
+    };
+  
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!isAtBottom) return;
+  
+    const container = containerRef.current;
+    if (container) {
+      container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+    }
+  }, [messages]);
 
   const handleSend = async () => {
     if (!input.trim() || isSending || loading || !isTypingComplete) return;
-  
+
     setIsSending(true);
     const userMessage = { role: 'user', content: input };
     setMessages(prev => [...prev, userMessage]);
@@ -42,10 +77,10 @@ const ChatApp = () => {
     setHistory(prev => [...prev, input]);
     setLoading(true);
     setIsTypingComplete(false);
-  
+
     const controller = new AbortController(); // ✅ Tạo controller mới
     controllerRef.current = controller;       // ✅ Lưu vào ref
-  
+
     try {
       const response = await axios.post(
         'https://openrouter.ai/api/v1/chat/completions',
@@ -63,12 +98,12 @@ const ChatApp = () => {
           }
         }
       );
-  
+
       const assistantReply = response.data.choices[0].message;
       setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
       setLoading(false);
       setIsSending(false);
-  
+
       displayTypingEffect(assistantReply.content);
     } catch (err) {
       if (err.name === 'CanceledError') {
@@ -80,13 +115,13 @@ const ChatApp = () => {
           content: '❌ Lỗi khi gọi API. Vui lòng thử lại.'
         }]);
       }
-  
+
       setLoading(false);
       setIsSending(false);
       setIsTypingComplete(true);
     }
   };
-  
+
 
 
   const displayTypingEffect = (text) => {
@@ -107,7 +142,7 @@ const ChatApp = () => {
         typingIntervalRef.current = null;
         setIsTypingComplete(true);  // Đánh dấu đã hoàn tất typing
       }
-    }, 50);
+    }, 30);
   };
 
 
@@ -117,16 +152,16 @@ const ChatApp = () => {
       controllerRef.current.abort();
       console.log('Đã huỷ request đến OpenRouter.');
     }
-  
+
     // ✅ Dừng hiệu ứng gõ phím
     clearInterval(typingIntervalRef.current);
     typingIntervalRef.current = null;
-  
+
     setIsTypingComplete(true);
     setLoading(false);
     setIsSending(false);
   };
-  
+
 
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !loading) handleSend();
@@ -209,7 +244,7 @@ const ChatApp = () => {
             placeholder="Nhập tin nhắn..."
             disabled={isSending || loading}  // Disabled khi đang gửi hoặc loading
           />
-          {loading || isSending ||  !isTypingComplete ? (
+          {loading || isSending || !isTypingComplete ? (
             <button onClick={handleCancel}>❌ Cancel</button>
           ) : (
             <button onClick={handleSend} disabled={isSending || !input.trim() || loading}>
@@ -217,7 +252,32 @@ const ChatApp = () => {
             </button>
           )}
         </div>
-
+        {!isAtBottom && (
+          <button
+            onClick={() => {
+              const container = containerRef.current;
+              container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+            }}
+            className="scroll-to-bottom-btn"
+            style={{
+              position: 'fixed',
+              width: '50px',
+              height: '50px',
+              top: '80%',
+              left: '50%',
+              padding: '10px 15px',
+              borderRadius: '50%',
+              backgroundColor: '#007bff',
+              color: '#fff',
+              border: 'none',
+              boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+              cursor: 'pointer',
+              zIndex: 9999,
+            }}
+          >
+            ↓
+          </button>
+        )}
 
       </div>
     </div>
