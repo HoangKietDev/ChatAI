@@ -1,4 +1,3 @@
-/* ChatApp.css */
 .main {
   display: flex;
   height: 100vh;
@@ -24,20 +23,19 @@
   margin-bottom: 10px;
   cursor: pointer;
   color: #007bff;
-  white-space: nowrap;         /* Đảm bảo nội dung chỉ hiển thị trên một dòng */
-  overflow: hidden;            /* Ẩn nội dung vượt quá giới hạn */
-  display: block;              /* Hiển thị li dưới dạng block */
-  font-size: 14px;             /* Kích thước chữ có thể tùy chỉnh */
-   /* Thêm hiệu ứng mờ dần */
-   position: relative;
+  white-space: nowrap;
+  overflow: hidden;
+  display: block;
+  font-size: 14px;
+  position: relative;
 }
 
 .history-sidebar li::after {
-  content: '';                  /* Thêm một phần tử giả vào cuối li */
+  content: '';
   position: absolute;
   top: 0;
   right: 0;
-  width: 30px;                  /* Kích thước vùng mờ dần */
+  width: 30px;
   height: 100%;
   background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, #f4f4f4 100%);
 }
@@ -53,27 +51,44 @@
   background-color: #fff;
   border-left: 1px solid #ddd;
   width: 100%;
+  height: 100vh;
+  /* Chiếm toàn bộ chiều cao màn hình */
+  position: relative;
 }
 
 .chat-header {
   background-color: #007bff;
   color: white;
-  padding: 15px;
-  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
   font-weight: bold;
-  text-align: center;
+  font-size: 18px;
+  padding: 15px;
+  background-color:  #007bff;
+  border-bottom: 1px solid #ddd;
 }
 
 .chat-content {
-  flex-grow: 1;
-  overflow-y: auto;
+  flex: 1;
+  overflow: hidden;
+  /* Ngăn tràn */
+  display: flex;
+  flex-direction: column;
   padding: 20px;
 }
 
 .chat-messages {
+  flex: 1;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
+
+  flex-grow: 1;
+  /* Đảm bảo phần này chiếm hết không gian còn lại */
+
 }
 
 .chat-message {
@@ -139,6 +154,8 @@
   display: flex;
   flex-direction: column;
   position: relative;
+
+
 }
 
 .history-sidebar.collapsed {
@@ -173,6 +190,82 @@
   pointer-events: none;
 }
 
+.history-list {
+  list-style-type: none;
+  max-height: 100vh;
+  /* hoặc bất kỳ chiều cao cố định nào bạn muốn */
+  overflow-y: auto;
+  /* Cho phép scroll dọc */
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.history-list li {
+  color: black;
+}
+
+.history-item {
+  padding: 10px 15px;
+  margin-bottom: 5px;
+  background-color: #f5f5f5;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.history-item:hover {
+  background-color: #e0e0e0;
+}
+
+
 .scroll-to-bottom-btn {
   transition: opacity 0.3s ease-in-out;
+}
+
+.scroll-to-bottom-btn {
+  position: absolute;
+  left: 50%;
+  bottom: 70px;
+  /* Cách đáy chat 70px */
+  transform: translateX(-50%);
+  width: 50px;
+  height: 50px;
+  padding: 8px 8px;
+  border-radius: 50%;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  z-index: 999;
+  font-size: 24px;
+}
+
+.end-of-chat {
+  flex-shrink: 0;
+  margin-top: auto;
+  /* Đảm bảo rằng phần này luôn nằm ở cuối */
+  height: 63vh;
+  /* Rất nhỏ, chỉ để tạo không gian */
+}
+
+.chat-actions {
+  position: absolute;
+  left: 10px;
+}
+
+.reset-chat-btn {
+  padding: 6px 10px;
+  background-color: green;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.reset-chat-btn:hover {
+  background-color: rgb(30, 237, 30);
 }

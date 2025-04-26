@@ -7,69 +7,53 @@ const ChatApp = () => {
   const [input, setInput] = useState('');
   const [history, setHistory] = useState([]); // Lưu lịch sử tìm kiếm
   const [loading, setLoading] = useState(false); // Cờ để kiểm tra trạng thái loading
-  const [highlightedIndex, setHighlightedIndex] = useState(null);
-  const [showHistory, setShowHistory] = useState(true);
+  const [highlightedIndex, setHighlightedIndex] = useState(null);   // in đậm tin nhắn
+  const [showHistory, setShowHistory] = useState(true);    // tắt ẩn lịch sử
   const [isTypingComplete, setIsTypingComplete] = useState(true); // Cờ hoàn tất typing
   const [isSending, setIsSending] = useState(false); // Cờ để kiểm tra quá trình gửi câu hỏi
-  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [isAtBottom, setIsAtBottom] = useState(true);  // Cờ để kiểm tra vị trí cuộn
 
   const containerRef = useRef(null); // ref đến .chat-messages
   const messageRefs = useRef([]);    // mảng ref đến từng tin nhắn
-  const CHAT_API_KEY = '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';
+  const historyContainerRef = useRef(null); //ref đến .chat-messages
+  const CHAT_API_KEY = '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';
   const typingIntervalRef = useRef(null); // Giữ ref để dừng typing
   const controllerRef = useRef(null); // Ref để hủy API call
 
+  // ✅ Cuộn đến cuối khi có tin nhắn mới
   useEffect(() => {
     const lastMessage = messages[messages.length - 1];
     if (containerRef.current && lastMessage?.role === 'user') {
       const totalMessages = messageRefs.current.length;
       const lastMessageRef = messageRefs.current[totalMessages - 1];
-
       if (lastMessageRef) {
         lastMessageRef.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }
   }, [messages]);
 
-  const handleScroll = () => {
-    const container = containerRef.current;
-    if (!container) return;
-  
-    const threshold = 50; // khoảng cách cho phép lệch khỏi đáy
-    const isBottom = container.scrollHeight - container.scrollTop - container.clientHeight <= threshold;
-    setIsAtBottom(isBottom);
-  };
 
+  // ✅ Ẩn hiện nút kéo xuống để scroll nếu không ở cuối
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) {
-      console.log('❌ containerRef is null');
-      return;
-    }
-  
     const handleScroll = () => {
-      console.log('✅ scroll event triggered');
-      const threshold = 50;
-      const isBottom = container.scrollHeight - container.scrollTop - container.clientHeight <= threshold;
-      setIsAtBottom(isBottom);
+      if (!container) return;
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      setIsAtBottom(scrollTop + clientHeight >= scrollHeight - 10); // +-10 cho mượt
     };
-  
-    container.addEventListener('scroll', handleScroll);
-    return () => container.removeEventListener('scroll', handleScroll);
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+    }
+    return () => {
+      if (container) {
+        container.removeEventListener('scroll', handleScroll);
+      }
+    };
   }, []);
 
-  useEffect(() => {
-    if (!isAtBottom) return;
-  
-    const container = containerRef.current;
-    if (container) {
-      container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
-    }
-  }, [messages]);
-
+  // ✅ Gọi API tới ChatAI khi nhấn nút gửi
   const handleSend = async () => {
-    if (!input.trim() || isSending || loading || !isTypingComplete) return;
-
+    if (!input.trim() || isSending || loading || !isTypingComplete) return;   // Không gửi nếu không có nội dung hoặc đang gửi hoặc đang loading
     setIsSending(true);
     const userMessage = { role: 'user', content: input };
     setMessages(prev => [...prev, userMessage]);
@@ -89,7 +73,7 @@ const ChatApp = () => {
           messages: [...messages, userMessage],
         },
         {
-          signal: controller.signal, // ✅ Gán signal vào đây
+          signal: controller.signal, // ✅ Gán signal để hủy yêu cầu
           headers: {
             'Authorization': `Bearer ${CHAT_API_KEY}`,
             'Content-Type': 'application/json',
@@ -122,8 +106,7 @@ const ChatApp = () => {
     }
   };
 
-
-
+  // Hiệu ứng gõ phím typing
   const displayTypingEffect = (text) => {
     let index = -1;
     typingIntervalRef.current = setInterval(() => {
@@ -145,15 +128,15 @@ const ChatApp = () => {
     }, 30);
   };
 
-
+  // ✅ Hủy đặt câu hỏi cho ChatAI
   const handleCancel = () => {
-    // ✅ Hủy gọi API nếu đang gọi
+    // Hủy gọi API nếu đang gọi
     if (controllerRef.current) {
       controllerRef.current.abort();
       console.log('Đã huỷ request đến OpenRouter.');
     }
 
-    // ✅ Dừng hiệu ứng gõ phím
+    // Dừng hiệu ứng gõ phím
     clearInterval(typingIntervalRef.current);
     typingIntervalRef.current = null;
 
@@ -162,33 +145,52 @@ const ChatApp = () => {
     setIsSending(false);
   };
 
-
+  // ✅ xử lý sự kiện nhấn phím Ente
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !loading) handleSend();
   };
 
-
+  // ✅ Cuộn đến tin nhắn được chọn trong lịch sử
   const scrollToMessage = (index) => {
-    // Tìm trong messages vị trí của câu hỏi (vai trò user) khớp với lịch sử
     const userIndexes = messages
       .map((msg, idx) => (msg.role === 'user' ? idx : null))
       .filter((idx) => idx !== null);
 
-    const userMsgIndex = userIndexes[index]; // index trong messages tương ứng với lịch sử
-
+    const userMsgIndex = userIndexes[index];
     const messageEl = messageRefs.current[userMsgIndex];
+
     if (messageEl) {
       messageEl.scrollIntoView({
         behavior: 'smooth',
         block: 'start',
       });
       setHighlightedIndex(userMsgIndex);
-
       setTimeout(() => {
         setHighlightedIndex(null);
       }, 2000);
     }
+
+    // Scroll lịch sử
+    if (historyContainerRef.current) {
+      const historyItems = historyContainerRef.current.querySelectorAll('.history-item');
+      const historyItemEl = historyItems[index];
+      if (historyItemEl) {
+        historyItemEl.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      }
+    }
   };
+
+  // ✅ Reset tất cả tin nhắn và lịch sử 
+  const handleResetChat = () => {
+    setMessages([]);
+    setHistory([]);
+    setInput('');
+    setIsAtBottom(true);
+  };
+
 
   return (
     <div className='main'>
@@ -204,9 +206,13 @@ const ChatApp = () => {
         {showHistory && (
           <>
             <h4>Lịch sử tìm kiếm</h4>
-            <ul>
+            <ul className="history-list" ref={historyContainerRef}>
               {history.map((item, index) => (
-                <li key={index} onClick={() => scrollToMessage(index)}>
+                <li
+                  key={index}
+                  className="history-item"
+                  onClick={() => scrollToMessage(index)}
+                >
                   {item}
                 </li>
               ))}
@@ -216,7 +222,15 @@ const ChatApp = () => {
       </div>
       <div className="chat-container">
         <div className="chat-header">
-          💬 ChatGPT Demo
+          <div className="chat-actions">
+            {isTypingComplete &&
+              <button onClick={handleResetChat} className="reset-chat-btn">
+                🔄 New Chat
+              </button>
+            }
+
+          </div>
+          💬 ChatAI
         </div>
         <div className="chat-content">
           <div className="chat-messages" ref={containerRef}>
@@ -226,14 +240,17 @@ const ChatApp = () => {
                 className={`chat-message ${msg.role} ${i === highlightedIndex ? 'highlighted' : ''}`}
                 ref={el => messageRefs.current[i] = el}
               >
-                {msg.content}
+                {msg.role === 'assistant' ?
+                  <span className="chat-icon">{msg.content}🤖</span>
+                  : <span className="chat-icon">👤{msg.content}</span>}
               </div>
             ))}
             {loading && (
               <div className="chat-message assistant">
-                Đang tải...
+                Đang tải...<span className="chat-icon">🤖</span>
               </div>
             )}
+            <div className="end-of-chat"></div> {/* Phần tạo khoảng trống phía dưới */}
           </div>
         </div>
         <div className="chat-input">
@@ -256,28 +273,28 @@ const ChatApp = () => {
           <button
             onClick={() => {
               const container = containerRef.current;
-              container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+              container.scrollTo({
+                top: container.scrollHeight,              // Cuộn xuống cuối tag .chat-messages khi nhấn nút
+                behavior: 'smooth'
+              });
             }}
             className="scroll-to-bottom-btn"
-            style={{
-              position: 'fixed',
-              width: '50px',
-              height: '50px',
-              top: '80%',
-              left: '50%',
-              padding: '10px 15px',
-              borderRadius: '50%',
-              backgroundColor: '#007bff',
-              color: '#fff',
-              border: 'none',
-              boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-              cursor: 'pointer',
-              zIndex: 9999,
-            }}
           >
             ↓
           </button>
         )}
+
+        {/* {!isAtBottom && (
+          <button
+            onClick={() => {
+              const lastMessage = messageRefs.current[messageRefs.current.length - 1];      // Cuộn xuống cuối mảng messageRefs khi nhấn nút
+              lastMessage?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="scroll-to-bottom-btn"
+          >
+            ↓
+          </button>
+        )} */}
 
       </div>
     </div>
