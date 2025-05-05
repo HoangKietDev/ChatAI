@@ -16,7 +16,7 @@ const ChatApp = () => {
   const containerRef = useRef(null); // ref đến .chat-messages
   const messageRefs = useRef([]);    // mảng ref đến từng tin nhắn
   const historyContainerRef = useRef(null); //ref đến .chat-messages
-  const CHAT_API_KEY = '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';
+  const CHAT_API_KEY = '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';
   const typingIntervalRef = useRef(null); // Giữ ref để dừng typing
   const controllerRef = useRef(null); // Ref để hủy API call
 
